@@ -17,8 +17,12 @@ windows. It is intentionally local-first and dependency-free.
 
 - Five polished starter layouts, including a large focus pane with two or four
   supporting panes.
+- A snap-to-grid editor: add 1×1 windows, drag to move, drag the corner to
+  resize, and let colliding windows shift into the nearest free cells.
+- Switchable 2×2 through 6×4 grids with minimum-size and fit constraints.
 - Saved local layouts and task assignments.
-- A searchable picker backed by the local Codex task index.
+- A searchable picker of top-level Codex conversations, grouped by project,
+  with local pinning.
 - Multi-display selection, with LG displays preferred on first launch.
 - Accessibility-based positioning of matching open Codex windows.
 - A global `Control–Option–L` shortcut, menu bar access, and regular app launch.
@@ -64,10 +68,12 @@ You can also open `Package.swift` directly in Xcode.
 
 ## How it works
 
-1. Layouts are normalized rectangles, independent of any particular display
-   size.
-2. Recent task metadata is read from `~/.codex/state_5.sqlite` using SQLite's
-   read-only mode.
+1. The editor stores windows as discrete grid cells and derives normalized
+   rectangles, keeping layouts independent of any particular display size.
+2. Recent top-level task metadata is read from `~/.codex/state_5.sqlite` using
+   SQLite's read-only mode. Friendly sidebar titles are overlaid from
+   `~/.codex/session_index.jsonl`; internal subagent and worker threads are
+   excluded.
 3. The selected display's visible frame excludes the menu bar and Dock.
 4. macOS Accessibility APIs read Codex window titles and set position/size.
 5. Layouts and assignments are stored as versionable JSON in Application
@@ -78,10 +84,10 @@ See [Architecture](docs/ARCHITECTURE.md), [Design system](docs/DESIGN.md), and
 
 ## Privacy and permissions
 
-Codex Layouts runs entirely on your Mac. It reads only the task ID, title,
-project path, and last-updated time needed for the picker. It never writes to
-the Codex database. Accessibility is used only after you choose **Arrange**.
-Read the full [privacy note](PRIVACY.md).
+Codex Layouts runs entirely on your Mac. It reads only the task ID, saved task
+title, project path, and last-updated time needed for the picker. It never
+writes to the Codex database. Accessibility is used only after you choose
+**Arrange**. Read the full [privacy note](PRIVACY.md).
 
 ## Contributing
 

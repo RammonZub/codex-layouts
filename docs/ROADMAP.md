@@ -12,8 +12,13 @@
 
 ## 0.2 — Layout editor
 
-- [ ] Drag split lines with snapping and minimum-size constraints
-- [ ] Add, split, merge, and delete panes
+- [x] Cell-based grids with snapping and 1×1 minimum-size constraints
+- [x] Drag to move and resize windows
+- [x] Shift collisions into the nearest available cells
+- [x] Add and delete windows
+- [x] Select grid densities from 2×2 through 6×4
+- [x] Project-grouped task picker with local pins
+- [ ] Split and merge selected windows
 - [ ] Editable gaps and outer margins
 - [ ] Import/export layout JSON
 - [ ] Keyboard-only editing

@@ -8,16 +8,20 @@ struct WorkspaceView: View {
             header
 
             if let layout = model.selectedLayout {
-                VStack(spacing: 18) {
+                VStack(spacing: 12) {
+                    editorToolbar(for: layout)
+
                     LayoutPreview(
                         layout: layout,
                         tasksByID: model.tasksByID,
                         selectedSlotID: model.selectedSlotID,
-                        onSelectSlot: model.presentTaskPicker
+                        onSelectSlot: model.selectSlot,
+                        onAssignSlot: model.presentTaskPicker,
+                        onPlaceSlot: model.placeWindow
                     )
-                    .frame(maxWidth: 760, maxHeight: 470)
+                    .frame(maxWidth: 760, maxHeight: 430)
 
-                    assignmentLegend(for: layout)
+                    selectionBar(for: layout)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 34)
@@ -48,7 +52,7 @@ struct WorkspaceView: View {
                     )
                 }
 
-                Text("Click a window to assign a Codex task.")
+                Text("Drag title bars to move. Resize from the selected window’s corner.")
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
             }
@@ -106,31 +110,152 @@ struct WorkspaceView: View {
         .allowsWindowActivationEvents(true)
     }
 
-    private func assignmentLegend(for layout: WorkspaceLayout) -> some View {
-        HStack(spacing: 8) {
-            ForEach(Array(layout.slots.enumerated()), id: \.element.id) { index, slot in
-                let task = slot.taskID.flatMap { model.tasksByID[$0] }
+    private func editorToolbar(for layout: WorkspaceLayout) -> some View {
+        HStack(spacing: 9) {
+            Menu {
+                ForEach(GridSize.editorPresets, id: \.self) { gridSize in
+                    Button {
+                        model.changeGridSize(to: gridSize)
+                    } label: {
+                        if layout.gridSize == gridSize {
+                            Label(
+                                "\(gridSize.columns) × \(gridSize.rows)",
+                                systemImage: "checkmark"
+                            )
+                        } else {
+                            Text("\(gridSize.columns) × \(gridSize.rows)")
+                        }
+                    }
+                }
+            } label: {
+                Label(
+                    "\(layout.gridSize.columns) × \(layout.gridSize.rows) grid",
+                    systemImage: "grid"
+                )
+                .font(.system(size: 11.5, weight: .medium))
+                .padding(.horizontal, 11)
+                .frame(height: 34)
+                .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+
+            Button {
+                model.addWindow()
+            } label: {
+                Label("Add window", systemImage: "plus")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .padding(.horizontal, 10)
+                    .frame(height: 34)
+                    .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(PressScaleButtonStyle())
+
+            Spacer()
+
+            Label("1×1 minimum · positions locked to grid", systemImage: "lock.fill")
+                .font(.system(size: 10.5, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: 760)
+    }
+
+    @ViewBuilder
+    private func selectionBar(for layout: WorkspaceLayout) -> some View {
+        if let selectedSlotID = model.selectedSlotID,
+           let index = layout.slots.firstIndex(where: { $0.id == selectedSlotID }) {
+            let slot = layout.slots[index]
+            let rect = GridLayoutEngine.gridRect(for: slot.frame, in: layout.gridSize)
+            let task = slot.taskID.flatMap { model.tasksByID[$0] }
+
+            HStack(spacing: 8) {
+                Text("\(index + 1)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .frame(width: 22, height: 22)
+                    .background(.primary.opacity(0.09), in: Circle())
+
                 Button {
                     model.presentTaskPicker(for: slot.id)
                 } label: {
                     HStack(spacing: 6) {
-                        Text("\(index + 1)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .frame(width: 18, height: 18)
-                            .background(.primary.opacity(0.09), in: Circle())
-                        Text(task?.title ?? "Assign task")
+                        Image(systemName: task == nil ? "plus" : "text.bubble.fill")
+                        Text(task?.title ?? "Choose task")
                             .lineLimit(1)
                     }
                     .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(task == nil ? Color.secondary : Color.primary)
-                    .padding(.horizontal, 9)
-                    .frame(minHeight: 34)
-                    .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, 10)
+                    .frame(height: 34)
+                    .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(PressScaleButtonStyle())
-                .frame(maxWidth: 180)
+                .frame(maxWidth: 230)
+
+                Spacer()
+
+                Text("\(rect.columnSpan) × \(rect.rowSpan)")
+                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40)
+
+                sizeButton(
+                    systemImage: "arrow.left",
+                    help: "Make one column narrower",
+                    disabled: rect.columnSpan <= 1
+                ) {
+                    model.resizeSelectedWindow(columns: -1)
+                }
+                sizeButton(
+                    systemImage: "arrow.right",
+                    help: "Make one column wider",
+                    disabled: rect.columnSpan >= layout.gridSize.columns
+                ) {
+                    model.resizeSelectedWindow(columns: 1)
+                }
+                sizeButton(
+                    systemImage: "arrow.up",
+                    help: "Make one row shorter",
+                    disabled: rect.rowSpan <= 1
+                ) {
+                    model.resizeSelectedWindow(rows: -1)
+                }
+                sizeButton(
+                    systemImage: "arrow.down",
+                    help: "Make one row taller",
+                    disabled: rect.rowSpan >= layout.gridSize.rows
+                ) {
+                    model.resizeSelectedWindow(rows: 1)
+                }
+
+                Button(role: .destructive) {
+                    model.removeSelectedWindow()
+                } label: {
+                    Image(systemName: "trash")
+                        .frame(width: 34, height: 34)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .disabled(layout.slots.count <= 1)
+                .help("Remove window")
             }
+            .frame(maxWidth: 760)
         }
+    }
+
+    private func sizeButton(
+        systemImage: String,
+        help: String,
+        disabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .frame(width: 30, height: 30)
+                .background(.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 8))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .disabled(disabled)
+        .help(help)
     }
 
     private var actionBar: some View {

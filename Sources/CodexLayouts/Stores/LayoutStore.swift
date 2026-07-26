@@ -6,7 +6,7 @@ struct LayoutStore {
         var layouts: [WorkspaceLayout]
     }
 
-    private static let currentSchemaVersion = 2
+    private static let currentSchemaVersion = 3
 
     let fileURL: URL
 
@@ -84,6 +84,18 @@ struct LayoutStore {
                     !existingNames.contains($0.name)
                 }
             )
+        }
+
+        if document.schemaVersion < 3 {
+            for layoutIndex in layouts.indices {
+                let gridSize = layouts[layoutIndex].gridSize
+                for slotIndex in layouts[layoutIndex].slots.indices {
+                    let frame = layouts[layoutIndex].slots[slotIndex].frame
+                    let gridRect = GridLayoutEngine.gridRect(for: frame, in: gridSize)
+                    layouts[layoutIndex].slots[slotIndex].frame =
+                        GridLayoutEngine.normalizedRect(for: gridRect, in: gridSize)
+                }
+            }
         }
 
         return LayoutDocument(

@@ -14,7 +14,7 @@ struct TaskPickerView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Choose a Codex task")
                             .font(.system(size: 20, weight: .semibold, design: .rounded))
-                        Text("Recent local tasks · nothing is uploaded")
+                        Text("Top-level conversations · grouped like your Codex workspace")
                             .font(.system(size: 11.5))
                             .foregroundStyle(.secondary)
                     }
@@ -52,7 +52,7 @@ struct TaskPickerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.secondary)
-                    TextField("Search tasks or projects", text: $model.taskSearch)
+                    TextField("Search task titles or projects", text: $model.taskSearch)
                         .textFieldStyle(.plain)
                 }
                 .padding(.horizontal, 12)
@@ -80,14 +80,56 @@ struct TaskPickerView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 4) {
-                            ForEach(model.filteredTasks) { task in
-                                TaskPickerRow(task: task) {
-                                    model.assign(task.id)
+                        LazyVStack(alignment: .leading, spacing: 14) {
+                            if !model.filteredPinnedTasks.isEmpty {
+                                TaskSectionHeader(
+                                    title: "Pinned",
+                                    count: model.filteredPinnedTasks.count,
+                                    systemImage: "pin.fill"
+                                )
+
+                                VStack(spacing: 3) {
+                                    ForEach(model.filteredPinnedTasks) { task in
+                                        TaskPickerRow(
+                                            task: task,
+                                            isPinned: true,
+                                            onSelect: { model.assign(task.id) },
+                                            onTogglePinned: {
+                                                model.togglePinned(task.id)
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            ForEach(model.filteredProjectGroups) { group in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    TaskSectionHeader(
+                                        title: group.name,
+                                        count: group.tasks.count,
+                                        systemImage: group.name == "Projectless"
+                                            ? "tray"
+                                            : "folder.fill"
+                                    )
+                                    .help(group.path)
+
+                                    VStack(spacing: 3) {
+                                        ForEach(group.tasks) { task in
+                                            TaskPickerRow(
+                                                task: task,
+                                                isPinned: false,
+                                                onSelect: { model.assign(task.id) },
+                                                onTogglePinned: {
+                                                    model.togglePinned(task.id)
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                        .padding(10)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 14)
                     }
                 }
 
@@ -116,46 +158,93 @@ struct TaskPickerView: View {
     }
 }
 
+private struct TaskSectionHeader: View {
+    let title: String
+    let count: Int
+    let systemImage: String
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: systemImage)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 16)
+
+            Text(title)
+                .font(.system(size: 11.5, weight: .semibold))
+                .lineLimit(1)
+
+            Text("\(count)")
+                .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, 6)
+                .frame(height: 18)
+                .background(.primary.opacity(0.05), in: Capsule())
+
+            Spacer()
+        }
+        .padding(.horizontal, 9)
+    }
+}
+
 private struct TaskPickerRow: View {
     let task: CodexTask
-    let action: () -> Void
+    let isPinned: Bool
+    let onSelect: () -> Void
+    let onTogglePinned: () -> Void
     @State private var isHovering = false
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: "text.bubble.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 32)
-                    .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 9))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(task.title)
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .lineLimit(1)
-                    Text(task.projectName)
-                        .font(.system(size: 10.5))
+        HStack(spacing: 4) {
+            Button(action: onSelect) {
+                HStack(spacing: 12) {
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 14))
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            .primary.opacity(0.055),
+                            in: RoundedRectangle(cornerRadius: 9)
+                        )
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(task.title)
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Text(task.updatedAt, style: .relative)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 10)
                 }
-
-                Spacer(minLength: 10)
-
-                Text(task.updatedAt, style: .relative)
-                    .font(.system(size: 10.5))
-                    .foregroundStyle(.tertiary)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 10)
-            .frame(minHeight: 50)
-            .background(
-                .primary.opacity(isHovering ? 0.07 : 0),
-                in: RoundedRectangle(cornerRadius: 11)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 11))
+            .buttonStyle(.plain)
+
+            Button(action: onTogglePinned) {
+                Image(systemName: isPinned ? "pin.fill" : "pin")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(isPinned ? Color.primary : Color.secondary)
+                    .frame(
+                        width: LayoutDesign.desktopHitArea,
+                        height: LayoutDesign.desktopHitArea
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .help(isPinned ? "Unpin task" : "Pin task")
         }
-        .buttonStyle(PressScaleButtonStyle())
+        .padding(.leading, 10)
+        .padding(.trailing, 3)
+        .frame(minHeight: 50)
+        .background(
+            .primary.opacity(isHovering ? 0.07 : 0),
+            in: RoundedRectangle(cornerRadius: 11)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 11))
         .onHover { hovering in
             withAnimation(LayoutDesign.interactiveAnimation) {
                 isHovering = hovering

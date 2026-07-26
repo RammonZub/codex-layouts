@@ -49,6 +49,10 @@ struct LayoutStoreTests {
         #expect(layouts.contains { $0.name == "Focus + Grid" })
         #expect(layouts.contains { $0.name == "Focus + Four" })
         #expect(
+            layouts.first { $0.name == "Focus + Four" }?.gridSize
+                == GridSize(columns: 5, rows: 4)
+        )
+        #expect(
             layouts.first { $0.name == "Focus + Four" }?.slots[1].frame.height
                 == 0.25
         )

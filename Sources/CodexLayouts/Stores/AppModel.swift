@@ -16,19 +16,26 @@ final class AppModel {
     var statusMessage: String?
     var isShowingStatus = false
     var repositoryMessage: String?
+    var pinnedTaskIDs: Set<String>
 
     private let layoutStore: LayoutStore
     private let taskRepository: CodexTaskRepository
     private let arranger: WindowArranger
+    private let defaults: UserDefaults
+
+    private static let pinnedTaskIDsKey = "pinnedTaskIDs"
 
     init(
         layoutStore: LayoutStore = LayoutStore(),
         taskRepository: CodexTaskRepository = CodexTaskRepository(),
-        arranger: WindowArranger = WindowArranger()
+        arranger: WindowArranger = WindowArranger(),
+        defaults: UserDefaults = .standard
     ) {
         self.layoutStore = layoutStore
         self.taskRepository = taskRepository
         self.arranger = arranger
+        self.defaults = defaults
+        pinnedTaskIDs = Set(defaults.stringArray(forKey: Self.pinnedTaskIDsKey) ?? [])
         load()
     }
 
@@ -55,6 +62,29 @@ final class AppModel {
         }
     }
 
+    var filteredPinnedTasks: [CodexTask] {
+        filteredTasks.filter { pinnedTaskIDs.contains($0.id) }
+    }
+
+    var filteredProjectGroups: [CodexProjectGroup] {
+        let unpinned = filteredTasks.filter { !pinnedTaskIDs.contains($0.id) }
+        return Dictionary(grouping: unpinned, by: \.projectID)
+            .map { projectID, tasks in
+                CodexProjectGroup(
+                    id: projectID,
+                    name: tasks[0].projectName,
+                    path: tasks[0].projectPath,
+                    tasks: tasks.sorted { $0.updatedAt > $1.updatedAt }
+                )
+            }
+            .sorted {
+                if $0.mostRecentUpdate != $1.mostRecentUpdate {
+                    return $0.mostRecentUpdate > $1.mostRecentUpdate
+                }
+                return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+            }
+    }
+
     var assignmentCount: Int {
         selectedLayout?.slots.compactMap(\.taskID).count ?? 0
     }
@@ -65,6 +95,11 @@ final class AppModel {
 
     func selectLayout(_ id: UUID) {
         selectedLayoutID = id
+        selectedSlotID = selectedLayout?.slots.first?.id
+    }
+
+    func selectSlot(_ id: UUID) {
+        selectedSlotID = id
     }
 
     func presentTaskPicker(for slotID: UUID) {
@@ -86,16 +121,38 @@ final class AppModel {
         persistLayouts()
     }
 
+    func togglePinned(_ taskID: String) {
+        if pinnedTaskIDs.contains(taskID) {
+            pinnedTaskIDs.remove(taskID)
+        } else {
+            pinnedTaskIDs.insert(taskID)
+        }
+        defaults.set(pinnedTaskIDs.sorted(), forKey: Self.pinnedTaskIDsKey)
+    }
+
     func createLayout() {
-        let source = selectedLayout ?? WorkspaceLayout.starters[0]
-        var copy = source
-        copy = WorkspaceLayout(
+        let grid = GridSize.canvasDefault
+        let layout = WorkspaceLayout(
             name: uniqueName("Untitled Layout"),
-            slots: copy.slots.map { LayoutSlot(frame: $0.frame) },
+            slots: [
+                LayoutSlot(
+                    frame: GridLayoutEngine.normalizedRect(
+                        for: GridRect(
+                            column: 0,
+                            row: 0,
+                            columnSpan: 1,
+                            rowSpan: 1
+                        ),
+                        in: grid
+                    )
+                )
+            ],
+            gridSize: grid,
             isStarter: false
         )
-        layouts.append(copy)
-        selectedLayoutID = copy.id
+        layouts.append(layout)
+        selectedLayoutID = layout.id
+        selectedSlotID = layout.slots.first?.id
         persistLayouts()
     }
 
@@ -104,10 +161,93 @@ final class AppModel {
         let copy = WorkspaceLayout(
             name: uniqueName("\(source.name) Copy"),
             slots: source.slots.map { LayoutSlot(frame: $0.frame, taskID: $0.taskID) },
+            gridSize: source.gridSize,
             isStarter: false
         )
         layouts.append(copy)
         selectedLayoutID = copy.id
+        selectedSlotID = copy.slots.first?.id
+        persistLayouts()
+    }
+
+    func addWindow() {
+        guard let layoutIndex = selectedLayoutIndex else { return }
+        let layout = layouts[layoutIndex]
+        guard let slot = GridLayoutEngine.addingUnitSlot(
+            to: layout.slots,
+            in: layout.gridSize
+        ) else {
+            showStatus("This grid is full. Expand the grid or resize another window first.")
+            return
+        }
+        layouts[layoutIndex].slots.append(slot)
+        layouts[layoutIndex].isStarter = false
+        selectedSlotID = slot.id
+        persistLayouts()
+    }
+
+    func removeSelectedWindow() {
+        guard let layoutIndex = selectedLayoutIndex,
+              let selectedSlotID,
+              layouts[layoutIndex].slots.count > 1,
+              let slotIndex = layouts[layoutIndex].slots.firstIndex(where: {
+                  $0.id == selectedSlotID
+              }) else {
+            return
+        }
+        layouts[layoutIndex].slots.remove(at: slotIndex)
+        layouts[layoutIndex].isStarter = false
+        self.selectedSlotID = layouts[layoutIndex].slots[
+            min(slotIndex, layouts[layoutIndex].slots.count - 1)
+        ].id
+        persistLayouts()
+    }
+
+    func placeWindow(_ slotID: UUID, at gridRect: GridRect) {
+        guard let layoutIndex = selectedLayoutIndex else { return }
+        let layout = layouts[layoutIndex]
+        guard let slots = GridLayoutEngine.reflowing(
+            layout.slots,
+            moving: slotID,
+            to: gridRect,
+            in: layout.gridSize
+        ) else {
+            showStatus("That size does not fit. Free more grid cells and try again.")
+            return
+        }
+        layouts[layoutIndex].slots = slots
+        layouts[layoutIndex].isStarter = false
+        selectedSlotID = slotID
+        persistLayouts()
+    }
+
+    func resizeSelectedWindow(columns: Int = 0, rows: Int = 0) {
+        guard let layout = selectedLayout,
+              let selectedSlotID,
+              let slot = layout.slots.first(where: { $0.id == selectedSlotID }) else {
+            return
+        }
+        var gridRect = GridLayoutEngine.gridRect(for: slot.frame, in: layout.gridSize)
+        gridRect.columnSpan += columns
+        gridRect.rowSpan += rows
+        placeWindow(selectedSlotID, at: gridRect)
+    }
+
+    func changeGridSize(to gridSize: GridSize) {
+        guard let layoutIndex = selectedLayoutIndex else { return }
+        let layout = layouts[layoutIndex]
+        guard gridSize != layout.gridSize else { return }
+        guard let slots = GridLayoutEngine.regridding(
+            layout.slots,
+            from: layout.gridSize,
+            to: gridSize
+        ) else {
+            showStatus("The windows do not fit in a \(gridSize.columns) × \(gridSize.rows) grid.")
+            return
+        }
+        layouts[layoutIndex].slots = slots
+        layouts[layoutIndex].gridSize = gridSize
+        layouts[layoutIndex].isStarter = false
         persistLayouts()
     }
 
@@ -124,6 +264,7 @@ final class AppModel {
         guard layouts.count > 1, let index = selectedLayoutIndex else { return }
         layouts.remove(at: index)
         selectedLayoutID = layouts[min(index, layouts.count - 1)].id
+        selectedSlotID = selectedLayout?.slots.first?.id
         persistLayouts()
     }
 
@@ -136,7 +277,7 @@ final class AppModel {
         do {
             tasks = try taskRepository.loadRecentTasks()
             repositoryMessage = tasks.isEmpty
-                ? "No recent Codex tasks were found."
+                ? "No recent top-level Codex tasks were found."
                 : nil
         } catch {
             tasks = []
@@ -198,6 +339,7 @@ final class AppModel {
             repositoryMessage = "Saved layouts could not be read. Starter layouts were restored."
         }
         selectedLayoutID = layouts.first?.id
+        selectedSlotID = selectedLayout?.slots.first?.id
 
         displays = DisplayInfo.connected
         let storedDisplayID = UInt32(
