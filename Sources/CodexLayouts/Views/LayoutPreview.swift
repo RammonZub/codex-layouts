@@ -200,7 +200,6 @@ private struct GridSlotItem: View {
     @State private var lastMoveProposal: GridRect?
     @State private var lastResizeProposal: GridRect?
     @State private var moveRemainder = CGSize.zero
-    @State private var resizeRemainder = CGSize.zero
 
     private var sourceRect: GridRect {
         GridLayoutEngine.gridRect(for: slot.frame, in: gridSize)
@@ -229,10 +228,7 @@ private struct GridSlotItem: View {
     }
 
     private var renderedCardSize: CGSize {
-        CGSize(
-            width: max(42, snappedCardSize.width + resizeRemainder.width),
-            height: max(42, snappedCardSize.height + resizeRemainder.height)
-        )
+        snappedCardSize
     }
 
     private var snappedCardPosition: CGPoint {
@@ -247,11 +243,9 @@ private struct GridSlotItem: View {
     private var renderedCardPosition: CGPoint {
         CGPoint(
             x: snappedCardPosition.x
-                + moveRemainder.width
-                + resizeRemainder.width / 2,
+                + moveRemainder.width,
             y: snappedCardPosition.y
                 + moveRemainder.height
-                + resizeRemainder.height / 2
         )
     }
 
@@ -259,8 +253,8 @@ private struct GridSlotItem: View {
         slotCard
             .frame(width: renderedCardSize.width, height: renderedCardSize.height)
             .position(renderedCardPosition)
-            .scaleEffect(isMoving || isResizing ? 1.012 : 1)
-            .opacity(isMoving || isResizing ? 0.97 : 1)
+            .scaleEffect(isMoving ? 1.012 : 1)
+            .opacity(isMoving ? 0.97 : 1)
             .zIndex(isSelected || isInteracting ? 3 : 1)
             .animation(
                 reduceMotion || isInteracting ? nil : LayoutDesign.layoutSpring,
@@ -392,19 +386,11 @@ private struct GridSlotItem: View {
     }
 
     private var resizeHandle: some View {
-        Image(systemName: "arrow.up.left.and.arrow.down.right")
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.primary)
-            .frame(width: 30, height: 30)
-            .background(.thickMaterial, in: Circle())
-            .overlay {
-                Circle()
-                    .stroke(.primary.opacity(0.16), lineWidth: 1)
-            }
-            .padding(7)
-            .contentShape(Circle())
+        WidgetCornerGrip()
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
             .highPriorityGesture(resizeGesture)
-            .help("Drag to resize · minimum 1×1")
+            .help("Drag the corner to resize · snaps after 30%")
     }
 
     private var moveGesture: some Gesture {
@@ -425,8 +411,12 @@ private struct GridSlotItem: View {
                 }
                 isMoving = true
 
-                let columnDelta = Int((value.translation.width / cellSize.width).rounded())
-                let rowDelta = Int((value.translation.height / cellSize.height).rounded())
+                let columnDelta = Int(
+                    (value.translation.width / cellSize.width).rounded()
+                )
+                let rowDelta = Int(
+                    (value.translation.height / cellSize.height).rounded()
+                )
                 let proposal = GridRect(
                     column: origin.column + columnDelta,
                     row: origin.row + rowDelta,
@@ -466,8 +456,12 @@ private struct GridSlotItem: View {
                     onSelect()
                 }
 
-                let columnDelta = Int((value.translation.width / cellSize.width).rounded())
-                let rowDelta = Int((value.translation.height / cellSize.height).rounded())
+                let columnDelta = GridLayoutEngine.snappedResizeDelta(
+                    for: Double(value.translation.width / cellSize.width)
+                )
+                let rowDelta = GridLayoutEngine.snappedResizeDelta(
+                    for: Double(value.translation.height / cellSize.height)
+                )
                 let proposal = GridRect(
                     column: origin.column,
                     row: origin.row,
@@ -481,13 +475,10 @@ private struct GridSlotItem: View {
                     )
                 )
 
+                guard proposal != lastResizeProposal else {
+                    return
+                }
                 lastResizeProposal = proposal
-                resizeRemainder = CGSize(
-                    width: value.translation.width
-                        - CGFloat(proposal.columnSpan - origin.columnSpan) * cellSize.width,
-                    height: value.translation.height
-                        - CGFloat(proposal.rowSpan - origin.rowSpan) * cellSize.height
-                )
                 onPreview(proposal)
             }
             .onEnded { _ in
@@ -510,48 +501,35 @@ private struct GridSlotItem: View {
                     onSelect()
                 }
 
+                let columnDelta = GridLayoutEngine.snappedResizeDelta(
+                    for: Double(
+                        CGFloat(origin.columnSpan)
+                            * (value.magnification - 1)
+                    )
+                )
+                let rowDelta = GridLayoutEngine.snappedResizeDelta(
+                    for: Double(
+                        CGFloat(origin.rowSpan)
+                            * (value.magnification - 1)
+                    )
+                )
                 let proposal = GridRect(
                     column: origin.column,
                     row: origin.row,
                     columnSpan: min(
-                        max(
-                            1,
-                            Int(
-                                (
-                                    CGFloat(origin.columnSpan)
-                                        * value.magnification
-                                )
-                                .rounded()
-                            )
-                        ),
+                        max(1, origin.columnSpan + columnDelta),
                         gridSize.columns - origin.column
                     ),
                     rowSpan: min(
-                        max(
-                            1,
-                            Int(
-                                (
-                                    CGFloat(origin.rowSpan)
-                                        * value.magnification
-                                )
-                                .rounded()
-                            )
-                        ),
+                        max(1, origin.rowSpan + rowDelta),
                         gridSize.rows - origin.row
                     )
                 )
 
+                guard proposal != lastResizeProposal else {
+                    return
+                }
                 lastResizeProposal = proposal
-                resizeRemainder = CGSize(
-                    width: cellSize.width
-                        * CGFloat(origin.columnSpan)
-                        * value.magnification
-                        - cellSize.width * CGFloat(proposal.columnSpan),
-                    height: cellSize.height
-                        * CGFloat(origin.rowSpan)
-                        * value.magnification
-                        - cellSize.height * CGFloat(proposal.rowSpan)
-                )
                 onPreview(proposal)
             }
             .onEnded { _ in
@@ -579,7 +557,6 @@ private struct GridSlotItem: View {
 
     private func settleResizeState() {
         let changes = {
-            resizeRemainder = .zero
             isResizing = false
         }
         if reduceMotion {
@@ -596,6 +573,46 @@ private struct GridSlotItem: View {
     private var accessibilityLabelText: String {
         let assignment = task?.title ?? "unassigned"
         return "Window \(number), \(sourceRect.columnSpan) by \(sourceRect.rowSpan), \(assignment)"
+    }
+}
+
+private struct WidgetCornerGrip: View {
+    var body: some View {
+        WidgetCornerGripShape()
+            .stroke(
+                .ultraThinMaterial,
+                style: StrokeStyle(
+                    lineWidth: 11,
+                    lineCap: .round,
+                    lineJoin: .round
+                )
+            )
+            .overlay {
+                WidgetCornerGripShape()
+                    .stroke(
+                        Color.white.opacity(0.72),
+                        style: StrokeStyle(
+                            lineWidth: 1.2,
+                            lineCap: .round,
+                            lineJoin: .round
+                        )
+                    )
+            }
+            .shadow(color: .black.opacity(0.14), radius: 5, y: 2)
+            .padding(8)
+    }
+}
+
+private struct WidgetCornerGripShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY),
+            control1: CGPoint(x: rect.midX, y: rect.maxY),
+            control2: CGPoint(x: rect.maxX, y: rect.midY)
+        )
+        return path
     }
 }
 

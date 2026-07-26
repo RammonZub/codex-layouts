@@ -4,6 +4,17 @@ import Testing
 
 @Suite("Snap-to-grid layout engine")
 struct GridLayoutEngineTests {
+    @Test("Resize waits for thirty percent before snapping to the next cell")
+    func resizeThreshold() {
+        #expect(GridLayoutEngine.snappedResizeDelta(for: 0.29) == 0)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: -0.29) == 0)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: 0.30) == 1)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: -0.30) == -1)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: 0.99) == 1)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: 1.29) == 1)
+        #expect(GridLayoutEngine.snappedResizeDelta(for: 1.30) == 2)
+    }
+
     @Test("Normalized frames round-trip through grid cells")
     func roundTrip() {
         let grid = GridSize(columns: 5, rows: 4)

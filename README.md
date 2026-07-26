@@ -20,6 +20,8 @@ windows. It is intentionally local-first and dependency-free.
 - A large snap-to-grid canvas: click anywhere on a window to select it, drag
   from its full surface, pinch or use the corner to resize, and preview
   collision reflow.
+- Widget-style resizing holds the current size through the first 30% of a cell,
+  then snaps cleanly to the next horizontal or vertical grid unit.
 - Selected-window controls for assigning, removing, and resizing without a
   separate inspector or permanent toolbar.
 - Every empty grid cell is a direct add target, so gaps stay visibly aligned

@@ -1,6 +1,18 @@
 import Foundation
 
 enum GridLayoutEngine {
+    static func snappedResizeDelta(
+        for cellTravel: Double,
+        threshold: Double = 0.3
+    ) -> Int {
+        let magnitude = abs(cellTravel)
+        let wholeCells = Int(magnitude.rounded(.down))
+        let partialCell = magnitude - Double(wholeCells)
+        let crossesThreshold = partialCell + 0.000_001 >= threshold
+        let delta = wholeCells + (crossesThreshold ? 1 : 0)
+        return cellTravel < 0 ? -delta : delta
+    }
+
     static func gridRect(for frame: NormalizedRect, in grid: GridSize) -> GridRect {
         let startColumn = Int((frame.x * Double(grid.columns)).rounded())
         let endColumn = Int(((frame.x + frame.width) * Double(grid.columns)).rounded())

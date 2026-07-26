@@ -23,6 +23,10 @@ content itself.
   click-through so no invisible layer can steal pointer input.
 - A trackpad pinch resizes the selected card through the same interaction
   surface, with the corner handle retained for precise pointer control.
+- Resizing is discrete: the first 30% of each cell is a dead zone, then the
+  window snaps to the next grid unit without visually stretching between sizes.
+- The selected card uses a quiet glass curve at its lower-right corner instead
+  of an expansion icon, following the visual language of resizable widgets.
 - Depth comes from transparent shadows and system materials, not heavy borders.
 - Nested radii are concentric: 24-point outer canvas, 16-point inner canvas,
   and 10-point slots with 8-point spacing.
