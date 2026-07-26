@@ -10,7 +10,7 @@ struct ContentView: View {
 
             HStack(spacing: 0) {
                 SidebarView(model: model)
-                    .frame(width: 220)
+                    .frame(width: 190)
 
                 Rectangle()
                     .fill(.primary.opacity(0.07))

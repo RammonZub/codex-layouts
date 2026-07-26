@@ -37,10 +37,18 @@ struct LayoutStoreTests {
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        var legacyGrid = WorkspaceLayout.starters.first {
-            $0.name == "Focus + Grid"
-        }!
-        legacyGrid.name = "Focus + Four"
+        let legacyGrid = WorkspaceLayout(
+            name: "Focus + Four",
+            slots: [
+                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.6, height: 1)),
+                LayoutSlot(frame: .init(x: 0.6, y: 0, width: 0.2, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.8, y: 0, width: 0.2, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.6, y: 0.5, width: 0.2, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.8, y: 0.5, width: 0.2, height: 0.5))
+            ],
+            gridSize: .init(columns: 5, rows: 4),
+            isStarter: true
+        )
         let legacyData = try JSONEncoder().encode([legacyGrid])
         try legacyData.write(to: fileURL)
 
@@ -50,12 +58,40 @@ struct LayoutStoreTests {
         #expect(layouts.contains { $0.name == "Focus + Four" })
         #expect(
             layouts.first { $0.name == "Focus + Four" }?.gridSize
-                == GridSize(columns: 5, rows: 4)
+                == GridSize(columns: 4, rows: 2)
         )
         #expect(
             layouts.first { $0.name == "Focus + Four" }?.slots[1].frame.height
-                == 0.25
+                == 0.5
         )
+        try? FileManager.default.removeItem(
+            at: fileURL.deletingLastPathComponent()
+        )
+    }
+
+    @Test("Two-by-two layouts gain four columns without changing their shape")
+    func migratesTwoByTwoLayouts() throws {
+        let fileURL = temporaryFileURL()
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let layout = WorkspaceLayout(
+            name: "Custom",
+            slots: [
+                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.5, height: 1)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0, width: 0.5, height: 0.5))
+            ],
+            gridSize: .init(columns: 2, rows: 2)
+        )
+        try JSONEncoder().encode([layout]).write(to: fileURL)
+
+        let migrated = try LayoutStore(fileURL: fileURL).load().first {
+            $0.name == "Custom"
+        }
+
+        #expect(migrated?.gridSize == GridSize(columns: 4, rows: 2))
+        #expect(migrated?.slots.map(\.frame) == layout.slots.map(\.frame))
         try? FileManager.default.removeItem(
             at: fileURL.deletingLastPathComponent()
         )

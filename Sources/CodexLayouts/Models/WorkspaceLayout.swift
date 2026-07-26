@@ -57,35 +57,38 @@ extension WorkspaceLayout {
         WorkspaceLayout(
             name: "Focus + Stack",
             slots: [
-                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.6, height: 1)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0, width: 0.4, height: 0.5)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0.5, width: 0.4, height: 0.5))
+                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.5, height: 1)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0, width: 0.5, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0.5, width: 0.5, height: 0.5))
             ],
-            gridSize: .init(columns: 5, rows: 4),
+            gridSize: .init(columns: 4, rows: 2),
             isStarter: true
         ),
         WorkspaceLayout(
             name: "Focus + Four",
             slots: [
-                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.6, height: 1)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0, width: 0.4, height: 0.25)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0.25, width: 0.4, height: 0.25)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0.5, width: 0.4, height: 0.25)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0.75, width: 0.4, height: 0.25))
+                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.5, height: 1)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0, width: 0.25, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.75, y: 0, width: 0.25, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0.5, width: 0.25, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.75, y: 0.5, width: 0.25, height: 0.5))
             ],
-            gridSize: .init(columns: 5, rows: 4),
+            gridSize: .init(columns: 4, rows: 2),
             isStarter: true
         ),
         WorkspaceLayout(
             name: "Focus + Grid",
-            slots: [
-                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.6, height: 1)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0, width: 0.2, height: 0.5)),
-                LayoutSlot(frame: .init(x: 0.8, y: 0, width: 0.2, height: 0.5)),
-                LayoutSlot(frame: .init(x: 0.6, y: 0.5, width: 0.2, height: 0.5)),
-                LayoutSlot(frame: .init(x: 0.8, y: 0.5, width: 0.2, height: 0.5))
-            ],
-            gridSize: .init(columns: 5, rows: 4),
+            slots: (0..<8).map { index in
+                LayoutSlot(
+                    frame: .init(
+                        x: Double(index % 4) / 4,
+                        y: Double(index / 4) / 2,
+                        width: 0.25,
+                        height: 0.5
+                    )
+                )
+            },
+            gridSize: .init(columns: 4, rows: 2),
             isStarter: true
         ),
         WorkspaceLayout(
@@ -106,7 +109,7 @@ extension WorkspaceLayout {
                 LayoutSlot(frame: .init(x: 0, y: 0.5, width: 0.5, height: 0.5)),
                 LayoutSlot(frame: .init(x: 0.5, y: 0.5, width: 0.5, height: 0.5))
             ],
-            gridSize: .init(columns: 2, rows: 2),
+            gridSize: .init(columns: 4, rows: 2),
             isStarter: true
         )
     ]

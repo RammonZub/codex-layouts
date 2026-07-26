@@ -6,7 +6,7 @@ struct LayoutStore {
         var layouts: [WorkspaceLayout]
     }
 
-    private static let currentSchemaVersion = 3
+    private static let currentSchemaVersion = 4
 
     let fileURL: URL
 
@@ -94,6 +94,40 @@ struct LayoutStore {
                     let gridRect = GridLayoutEngine.gridRect(for: frame, in: gridSize)
                     layouts[layoutIndex].slots[slotIndex].frame =
                         GridLayoutEngine.normalizedRect(for: gridRect, in: gridSize)
+                }
+            }
+        }
+
+        if document.schemaVersion < 4 {
+            for layoutIndex in layouts.indices {
+                if layouts[layoutIndex].isStarter,
+                   let replacement = WorkspaceLayout.starters.first(where: {
+                       $0.name == layouts[layoutIndex].name
+                   }) {
+                    let assignments = layouts[layoutIndex].slots.map(\.taskID)
+                    layouts[layoutIndex] = WorkspaceLayout(
+                        id: layouts[layoutIndex].id,
+                        name: replacement.name,
+                        slots: replacement.slots.enumerated().map { index, slot in
+                            LayoutSlot(
+                                frame: slot.frame,
+                                taskID: assignments.indices.contains(index)
+                                    ? assignments[index]
+                                    : nil
+                            )
+                        },
+                        gridSize: replacement.gridSize,
+                        isStarter: true
+                    )
+                } else if layouts[layoutIndex].gridSize
+                    == GridSize(columns: 2, rows: 2),
+                    let slots = GridLayoutEngine.regridding(
+                        layouts[layoutIndex].slots,
+                        from: layouts[layoutIndex].gridSize,
+                        to: GridSize(columns: 4, rows: 2)
+                    ) {
+                    layouts[layoutIndex].slots = slots
+                    layouts[layoutIndex].gridSize = GridSize(columns: 4, rows: 2)
                 }
             }
         }

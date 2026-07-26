@@ -12,11 +12,12 @@
 
 ## 0.2 — Layout editor
 
-- [x] Cell-based grids with snapping and 1×1 minimum-size constraints
+- [x] LG-friendly 4×2 default grid with 1×1 minimum-size constraints
 - [x] Continuous drag/resize with live collision reflow
 - [x] Shift collisions into the nearest available cells
 - [x] In-canvas add and direct card removal
-- [x] Select grid densities from 2×2 through 6×4
+- [x] Whole-card selection and dragging with contextual card controls
+- [x] Select grid densities from 3×2 through 6×4
 - [x] Project-grouped task picker with local pins
 - [ ] Split and merge selected windows
 - [ ] Editable gaps and outer margins

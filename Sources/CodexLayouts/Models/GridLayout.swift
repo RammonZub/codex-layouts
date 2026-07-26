@@ -9,15 +9,15 @@ struct GridSize: Codable, Equatable, Hashable, Sendable {
         self.rows = max(1, rows)
     }
 
-    static let canvasDefault = GridSize(columns: 4, rows: 4)
+    static let canvasDefault = GridSize(columns: 4, rows: 2)
 
     static let editorPresets = [
-        GridSize(columns: 2, rows: 2),
         GridSize(columns: 3, rows: 2),
-        GridSize(columns: 3, rows: 3),
+        GridSize(columns: 4, rows: 2),
+        GridSize(columns: 5, rows: 2),
+        GridSize(columns: 6, rows: 2),
         GridSize(columns: 4, rows: 3),
-        GridSize(columns: 4, rows: 4),
-        GridSize(columns: 5, rows: 4),
+        GridSize(columns: 6, rows: 3),
         GridSize(columns: 6, rows: 4)
     ]
 

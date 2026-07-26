@@ -24,11 +24,11 @@ struct LayoutPreview: View {
 
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: LayoutDesign.outerRadius)
-                    .fill(.primary.opacity(0.025))
-                    .shadow(color: .black.opacity(0.1), radius: 26, y: 13)
+                    .fill(.primary.opacity(0.016))
+                    .shadow(color: .black.opacity(0.07), radius: 18, y: 8)
                     .overlay {
                         RoundedRectangle(cornerRadius: LayoutDesign.outerRadius)
-                            .stroke(.primary.opacity(0.08), lineWidth: 1)
+                            .stroke(.primary.opacity(0.055), lineWidth: 1)
                     }
 
                 ZStack {
@@ -125,7 +125,7 @@ struct LayoutPreview: View {
             width: max(1, size.width - (LayoutDesign.cardPadding * 2)),
             height: max(1, size.height - (LayoutDesign.cardPadding * 2))
         )
-        let aspectRatio: CGFloat = 16.0 / 10.0
+        let aspectRatio: CGFloat = 16.0 / 9.0
         if available.width / available.height > aspectRatio {
             return CGSize(width: available.height * aspectRatio, height: available.height)
         }
@@ -138,7 +138,7 @@ private struct LayoutGridBackground: View {
 
     var body: some View {
         Canvas { context, size in
-            let color = Color.primary.opacity(0.095)
+            let color = Color.primary.opacity(0.065)
 
             for column in 1..<gridSize.columns {
                 let x = size.width * CGFloat(column) / CGFloat(gridSize.columns)
@@ -164,10 +164,10 @@ private struct LayoutGridBackground: View {
                 )
             }
         }
-        .background(.primary.opacity(0.022))
+        .background(.primary.opacity(0.012))
         .overlay {
             RoundedRectangle(cornerRadius: LayoutDesign.canvasRadius)
-                .stroke(.primary.opacity(0.085), lineWidth: 1)
+                .stroke(.primary.opacity(0.06), lineWidth: 1)
         }
         .allowsHitTesting(false)
     }
@@ -276,18 +276,15 @@ private struct GridSlotItem: View {
         VStack(spacing: 0) {
             titleBar
             taskContent
-                .allowsHitTesting(false)
-                .overlay {
-                    cardInteractionSurface
-                }
         }
+        .allowsHitTesting(false)
         .background {
             ZStack {
                 FrostedBackdrop(
                     material: .contentBackground,
                     blendingMode: .withinWindow
                 )
-                Color.primary.opacity(isHovering || isMoving ? 0.07 : 0.035)
+                Color.primary.opacity(isHovering || isMoving ? 0.052 : 0.026)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
@@ -300,6 +297,39 @@ private struct GridSlotItem: View {
                     lineWidth: isSelected ? 2 : 1
                 )
                 .allowsHitTesting(false)
+        }
+        .overlay {
+            cardInteractionSurface
+        }
+        .overlay(alignment: .topLeading) {
+            if isSelected && canRemove {
+                Button(role: .destructive, action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .frame(width: 26, height: 26)
+                        .background(.thickMaterial, in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(5)
+                .help("Remove window")
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if isSelected {
+                Button(action: onAssign) {
+                    Image(systemName: task == nil ? "plus" : "bubble.left.and.pencil")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .frame(width: 26, height: 26)
+                        .background(.thickMaterial, in: Circle())
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(5)
+                .help(task == nil ? "Choose task" : "Change task")
+                .transition(.scale.combined(with: .opacity))
+            }
         }
         .overlay(alignment: .bottomTrailing) {
             if isSelected {
@@ -315,91 +345,43 @@ private struct GridSlotItem: View {
             y: isMoving || isResizing ? 9 : (isHovering || isSelected ? 5 : 2)
         )
         .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
-        .help("Drag anywhere to move · double-click to change the task")
+        .help("Click to select · drag to move")
     }
 
     private var titleBar: some View {
-        HStack(spacing: 5) {
-            if isSelected && canRemove {
-                Button(role: .destructive, action: onRemove) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.red.opacity(0.78))
-                        .frame(width: 24, height: 24)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help("Remove window")
-                .transition(.scale.combined(with: .opacity))
-            } else {
-                ForEach(0..<3, id: \.self) { _ in
-                    Circle()
-                        .fill(.primary.opacity(0.18))
-                        .frame(width: 6, height: 6)
-                }
+        HStack(spacing: 4) {
+            ForEach(0..<3, id: \.self) { _ in
+                Circle()
+                    .fill(.primary.opacity(0.13))
+                    .frame(width: 5, height: 5)
             }
-
-            HStack(spacing: 0) {
-                Spacer(minLength: 2)
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 8.5, weight: .bold))
-                    .foregroundStyle(.tertiary)
-                Spacer(minLength: 2)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .gesture(moveGesture)
-
-            Button(action: onAssign) {
-                Image(systemName: task == nil ? "plus.bubble" : "bubble.left.and.pencil")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(task == nil ? "Assign a Codex task" : "Change Codex task")
-
-            Text("\(sourceRect.columnSpan)×\(sourceRect.rowSpan)")
-                .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                .foregroundStyle(.secondary)
-
-            Text("\(number)")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundStyle(.secondary)
+            Spacer()
         }
-        .padding(.horizontal, 8)
-        .frame(height: 29)
-        .background(.primary.opacity(0.052))
+        .padding(.horizontal, 9)
+        .frame(height: 25)
+        .background(.primary.opacity(0.036))
     }
 
     private var cardInteractionSurface: some View {
-        Color.clear
-            .contentShape(Rectangle())
+        Color.primary.opacity(0.001)
+            .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
             .gesture(moveGesture)
-            .simultaneousGesture(TapGesture(count: 1).onEnded(onSelect))
-            .simultaneousGesture(TapGesture(count: 2).onEnded(onAssign))
     }
 
     private var taskContent: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 5) {
             Image(systemName: task == nil ? "plus" : "text.bubble.fill")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(
-                    task == nil ? Color.secondary.opacity(0.62) : Color.primary
+                    task == nil ? Color.secondary.opacity(0.32) : Color.primary
                 )
 
-            Text(task?.title ?? "Choose task")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(task == nil ? Color.secondary : Color.primary)
-                .lineLimit(renderedCardSize.height < 108 ? 1 : 2)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
-
-            if let task, renderedCardSize.height >= 132 {
-                Text(task.projectName)
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+            if let task {
+                Text(task.title)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .lineLimit(renderedCardSize.height < 108 ? 1 : 2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -422,20 +404,22 @@ private struct GridSlotItem: View {
     }
 
     private var moveGesture: some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
-                guard !isResizing, !isResizeHandleLocation(value.startLocation) else {
-                    return
-                }
                 let origin: GridRect
                 if let moveOrigin {
                     origin = moveOrigin
                 } else {
                     origin = sourceRect
                     moveOrigin = sourceRect
-                    isMoving = true
                     onSelect()
                 }
+
+                guard abs(value.translation.width) >= 3
+                        || abs(value.translation.height) >= 3 else {
+                    return
+                }
+                isMoving = true
 
                 let columnDelta = Int((value.translation.width / cellSize.width).rounded())
                 let rowDelta = Int((value.translation.height / cellSize.height).rounded())
@@ -458,15 +442,11 @@ private struct GridSlotItem: View {
             }
             .onEnded { _ in
                 guard moveOrigin != nil else { return }
-                let proposal = lastMoveProposal ?? moveOrigin ?? sourceRect
-                onCommit(proposal)
+                if let proposal = lastMoveProposal {
+                    onCommit(proposal)
+                }
                 settleMoveState()
             }
-    }
-
-    private func isResizeHandleLocation(_ point: CGPoint) -> Bool {
-        point.x >= renderedCardSize.width - 48
-            && point.y >= renderedCardSize.height - 48
     }
 
     private var resizeGesture: some Gesture {
@@ -568,27 +548,21 @@ private struct AddGridCellButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                Image(systemName: "plus")
-                    .font(.system(size: 13, weight: .bold))
-                if cellSize.width >= 110, cellSize.height >= 82 {
-                    Text("Add")
-                        .font(.system(size: 9.5, weight: .semibold))
-                }
-            }
-            .foregroundStyle(.secondary)
+            Image(systemName: "plus")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.secondary)
             .frame(
                 width: max(42, cellSize.width - LayoutDesign.slotGap),
                 height: max(42, cellSize.height - LayoutDesign.slotGap)
             )
             .background(
-                .primary.opacity(isHovering ? 0.055 : 0.018),
+                .primary.opacity(isHovering ? 0.045 : 0.01),
                 in: RoundedRectangle(cornerRadius: LayoutDesign.slotRadius)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: LayoutDesign.slotRadius)
                     .stroke(
-                        .primary.opacity(isHovering ? 0.3 : 0.14),
+                        .primary.opacity(isHovering ? 0.25 : 0.10),
                         style: StrokeStyle(lineWidth: 1, dash: [5, 4])
                     )
             }
