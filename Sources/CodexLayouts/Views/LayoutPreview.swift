@@ -362,11 +362,17 @@ private struct GridSlotItem: View {
     }
 
     private var cardInteractionSurface: some View {
-        Color.primary.opacity(0.001)
-            .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
-            .gesture(moveGesture)
+        Button(action: onSelect) {
+            RoundedRectangle(cornerRadius: LayoutDesign.slotRadius)
+                .fill(.clear)
+                .contentShape(
+                    RoundedRectangle(cornerRadius: LayoutDesign.slotRadius)
+                )
+        }
+            .buttonStyle(.plain)
+            .simultaneousGesture(moveGesture)
             .simultaneousGesture(magnifyGesture)
-            .simultaneousGesture(TapGesture().onEnded(onSelect))
+            .accessibilityLabel("Select window \(number)")
     }
 
     private var taskContent: some View {
@@ -567,9 +573,9 @@ private struct WidgetCornerGrip: View {
     var body: some View {
         WidgetCornerGripShape()
             .stroke(
-                .ultraThinMaterial,
+                Color.primary.opacity(0.38),
                 style: StrokeStyle(
-                    lineWidth: 11,
+                    lineWidth: 4.5,
                     lineCap: .round,
                     lineJoin: .round
                 )
@@ -577,27 +583,33 @@ private struct WidgetCornerGrip: View {
             .overlay {
                 WidgetCornerGripShape()
                     .stroke(
-                        Color.white.opacity(0.72),
+                        Color.white.opacity(0.55),
                         style: StrokeStyle(
-                            lineWidth: 1.2,
+                            lineWidth: 1,
                             lineCap: .round,
                             lineJoin: .round
                         )
                     )
             }
-            .shadow(color: .black.opacity(0.14), radius: 5, y: 2)
-            .padding(8)
+            .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+            .padding(9)
     }
 }
 
 private struct WidgetCornerGripShape: Shape {
     func path(in rect: CGRect) -> Path {
+        let radius = min(LayoutDesign.slotRadius, min(rect.width, rect.height) / 2)
         var path = Path()
         path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY),
-            control1: CGPoint(x: rect.midX, y: rect.maxY),
-            control2: CGPoint(x: rect.maxX, y: rect.midY)
+        path.addLine(
+            to: CGPoint(x: rect.maxX - radius, y: rect.maxY)
+        )
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.maxY - radius),
+            control: CGPoint(x: rect.maxX, y: rect.maxY)
+        )
+        path.addLine(
+            to: CGPoint(x: rect.maxX, y: rect.minY)
         )
         return path
     }
