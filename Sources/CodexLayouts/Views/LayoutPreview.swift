@@ -6,6 +6,7 @@ private enum LayoutCanvasCoordinateSpace {
 
 struct LayoutPreview: View {
     let layout: WorkspaceLayout
+    let wallpaperURL: URL?
     let tasksByID: [String: CodexTask]
     let selectedSlotID: UUID?
     let onSelectSlot: (UUID) -> Void
@@ -35,6 +36,10 @@ struct LayoutPreview: View {
                     }
 
                 ZStack {
+                    DisplayWallpaperView(url: wallpaperURL)
+
+                    Color.black.opacity(0.08)
+
                     LayoutGridBackground(gridSize: layout.gridSize)
 
                     ForEach(Array(displayedSlots.enumerated()), id: \.element.id) {
@@ -79,6 +84,11 @@ struct LayoutPreview: View {
                 }
                 .frame(width: canvas.width, height: canvas.height)
                 .clipShape(RoundedRectangle(cornerRadius: LayoutDesign.canvasRadius))
+                .overlay {
+                    RoundedRectangle(cornerRadius: LayoutDesign.canvasRadius)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
                 .coordinateSpace(name: LayoutCanvasCoordinateSpace.name)
                 .padding(LayoutDesign.cardPadding)
             }
@@ -280,10 +290,10 @@ private struct GridSlotItem: View {
         .background {
             ZStack {
                 FrostedBackdrop(
-                    material: .contentBackground,
+                    material: .hudWindow,
                     blendingMode: .withinWindow
                 )
-                Color.primary.opacity(isHovering || isMoving ? 0.052 : 0.026)
+                Color.white.opacity(isHovering || isMoving ? 0.12 : 0.075)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
@@ -292,7 +302,7 @@ private struct GridSlotItem: View {
                 .stroke(
                     isSelected
                         ? Color.accentColor.opacity(0.88)
-                        : Color.primary.opacity(0.12),
+                        : Color.white.opacity(0.34),
                     lineWidth: isSelected ? 2 : 1
                 )
                 .allowsHitTesting(false)

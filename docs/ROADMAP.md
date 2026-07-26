@@ -26,6 +26,8 @@
 
 ## 0.3 — Reliable task-window orchestration
 
+- [x] Command-Shift-L floating layout switcher
+- [x] Selected-display wallpaper preview with native frosted panes
 - [ ] Detect Codex window creation and title changes
 - [ ] Reconcile missing, duplicate, and renamed task windows
 - [ ] Retry only while an explicit arrange operation is active

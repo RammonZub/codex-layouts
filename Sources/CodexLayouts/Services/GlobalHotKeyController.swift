@@ -3,7 +3,7 @@ import Foundation
 
 private let showLayoutsHotKeyHandler: EventHandlerUPP = { _, _, _ in
     Task { @MainActor in
-        AppActivation.showMainWindow()
+        AppActivation.showLayoutSwitcher()
     }
     return noErr
 }
@@ -33,7 +33,7 @@ final class GlobalHotKeyController {
         )
         RegisterEventHotKey(
             UInt32(kVK_ANSI_L),
-            UInt32(controlKey | optionKey),
+            UInt32(cmdKey | shiftKey),
             hotKeyID,
             GetApplicationEventTarget(),
             0,

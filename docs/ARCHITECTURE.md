@@ -12,12 +12,12 @@ in Xcode.
   display geometry.
 - `Stores/` owns app state and local JSON persistence.
 - `Services/` is the narrow platform boundary for SQLite, Accessibility,
-  deep links, and the global hotkey.
+  deep links, the global hotkey, and the floating layout-switcher panel.
 - `Support/` contains reusable visual and activation glue.
 
 SwiftUI is the source of truth. AppKit is limited to the frosted backdrop,
-workspace activation, and display metadata. ApplicationServices is isolated in
-the window arranger and permission helper.
+workspace activation, display metadata, and the nonactivating switcher panel.
+ApplicationServices is isolated in the window arranger and permission helper.
 
 ## Data flow
 
@@ -31,7 +31,10 @@ flowchart LR
     Model --> Grid["Snap + collision reflow"]
     Grid --> Preview["Grid editor"]
     Model --> Arranger["WindowArranger"]
+    Hotkey["Command-Shift-L"] --> Switcher["Floating layout switcher"]
+    Switcher --> Model
     Screen["NSScreen visibleFrame"] --> Arranger
+    Wallpaper["Selected display wallpaper"] --> Preview
     Arranger --> AX["macOS Accessibility"]
     AX --> Codex["Open Codex windows"]
 ```

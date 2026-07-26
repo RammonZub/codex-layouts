@@ -10,6 +10,7 @@ struct WorkspaceView: View {
             if let layout = model.selectedLayout {
                 LayoutPreview(
                     layout: layout,
+                    wallpaperURL: model.selectedDisplay?.wallpaperURL,
                     tasksByID: model.tasksByID,
                     selectedSlotID: model.selectedSlotID,
                     onSelectSlot: model.selectSlot,
@@ -187,7 +188,7 @@ struct WorkspaceView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 54)
-        .background(.regularMaterial.opacity(0.55))
+        .background(.ultraThinMaterial)
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(.primary.opacity(0.055))

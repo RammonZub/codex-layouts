@@ -69,7 +69,7 @@ struct SidebarView: View {
 
             Spacer(minLength: 0)
         }
-        .background(.thinMaterial.opacity(0.44))
+        .background(.ultraThinMaterial)
     }
 }
 
@@ -81,7 +81,7 @@ private struct LayoutSidebarRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                MiniLayoutGlyph(layout: layout)
+                LayoutGlyph(layout: layout)
                     .frame(width: 32, height: 24)
 
                 Text(layout.name)
@@ -100,32 +100,5 @@ private struct LayoutSidebarRow: View {
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(PressScaleButtonStyle())
-    }
-}
-
-private struct MiniLayoutGlyph: View {
-    let layout: WorkspaceLayout
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(.primary.opacity(0.035))
-
-                ForEach(layout.slots) { slot in
-                    let frame = slot.frame
-                    RoundedRectangle(cornerRadius: 2.5)
-                        .fill(.primary.opacity(slot.taskID == nil ? 0.16 : 0.32))
-                        .frame(
-                            width: max(2, proxy.size.width * frame.width - 1.5),
-                            height: max(2, proxy.size.height * frame.height - 1.5)
-                        )
-                        .offset(
-                            x: proxy.size.width * frame.x + 0.75,
-                            y: proxy.size.height * frame.y + 0.75
-                        )
-                }
-            }
-        }
     }
 }

@@ -8,7 +8,10 @@ struct CodexLayoutsApp: App {
     var body: some Scene {
         WindowGroup("Codex Layouts", id: "main") {
             ContentView(model: model)
-                .containerBackground(.ultraThickMaterial, for: .window)
+                .containerBackground(.thinMaterial, for: .window)
+                .task {
+                    appDelegate.configure(model: model)
+                }
         }
         .defaultSize(width: 1_280, height: 820)
         .defaultLaunchBehavior(.presented)
@@ -16,8 +19,8 @@ struct CodexLayoutsApp: App {
         .windowResizability(.contentMinSize)
         .commands {
             CommandMenu("Workspace") {
-                Button("Show Codex Layouts") {
-                    AppActivation.showMainWindow()
+                Button("Show Layout Switcher") {
+                    AppActivation.showLayoutSwitcher()
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
 

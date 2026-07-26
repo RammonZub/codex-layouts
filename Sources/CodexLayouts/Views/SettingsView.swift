@@ -49,14 +49,13 @@ struct SettingsView: View {
             }
 
             Section("Keyboard") {
-                LabeledContent("Show from anywhere") {
-                    Text("⌃⌥L")
-                        .font(.system(.body, design: .rounded))
-                }
-                LabeledContent("Show while active") {
+                LabeledContent("Layout switcher") {
                     Text("⌘⇧L")
                         .font(.system(.body, design: .rounded))
                 }
+                Text("Use ← and → to choose, Return to apply, or Escape to close.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 LabeledContent("Arrange selected layout") {
                     Text("⌘↩")
                         .font(.system(.body, design: .rounded))

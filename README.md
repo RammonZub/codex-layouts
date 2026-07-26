@@ -5,6 +5,8 @@ Codex tasks at once.
 
 ![Codex Layouts preview](docs/app-preview.png)
 
+![Global layout switcher](docs/layout-switcher.png)
+
 Codex Layouts lets you choose a visual window layout, assign a recent local
 Codex task to each pane, select a display, and arrange the matching open Codex
 windows. It is intentionally local-first and dependency-free.
@@ -33,8 +35,12 @@ windows. It is intentionally local-first and dependency-free.
 - A searchable picker of top-level Codex conversations, grouped by project,
   with local pinning.
 - Multi-display selection, with LG displays preferred on first launch.
+- The editor canvas mirrors the selected display's desktop wallpaper, with
+  frosted miniature windows that preview the real screen.
 - Accessibility-based positioning of matching open Codex windows.
-- A global `Control–Option–L` shortcut, menu bar access, and regular app launch.
+- A global `Command–Shift–L` layout switcher: choose with the pointer or arrow
+  keys, press Return to snap, or Escape to dismiss.
+- Menu bar access and regular app launch.
 - Workspace commands for adding (`Command–=`) and removing (`Command–Delete`)
   the selected window.
 - Light/Dark mode, reduced-motion support, and desktop-sized hit targets.
@@ -86,8 +92,10 @@ You can also open `Package.swift` directly in Xcode.
    `~/.codex/session_index.jsonl`; internal subagent and worker threads are
    excluded.
 3. The selected display's visible frame excludes the menu bar and Dock.
-4. macOS Accessibility APIs read Codex window titles and set position/size.
-5. Layouts and assignments are stored as versionable JSON in Application
+4. The canvas reads that display's public desktop-image URL and renders it
+   locally behind native material panes.
+5. macOS Accessibility APIs read Codex window titles and set position/size.
+6. Layouts and assignments are stored as versionable JSON in Application
    Support.
 
 See [Architecture](docs/ARCHITECTURE.md), [Design system](docs/DESIGN.md), and

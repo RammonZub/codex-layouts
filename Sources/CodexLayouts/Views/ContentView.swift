@@ -5,7 +5,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            FrostedBackdrop(material: .underWindowBackground)
+            FrostedBackdrop(material: .hudWindow)
                 .ignoresSafeArea()
 
             HStack(spacing: 0) {

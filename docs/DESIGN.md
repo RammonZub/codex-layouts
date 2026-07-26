@@ -8,6 +8,8 @@ content itself.
 
 - Frost is a dedicated backdrop layer; content is never blurred together with
   it.
+- The canvas mirrors the wallpaper of the selected display so the composition
+  previews the real desktop instead of an abstract rectangle.
 - Layout slots look like miniature Mac windows, including a quiet title bar
   and three neutral traffic-light dots.
 - Selection uses a precise accent ring and a visible corner resize handle.
@@ -35,6 +37,8 @@ content itself.
 - Interactive controls provide at least a 40×40-point desktop hit area.
 - Press feedback uses an interruptible 0.96 scale and respects Reduce Motion.
 - Colors and materials are semantic, adapting automatically to Light/Dark mode.
+- The global layout switcher is a single horizontal glass strip on the chosen
+  display, with pointer, arrow-key, Return, and Escape support.
 
 ## Reference translation
 
