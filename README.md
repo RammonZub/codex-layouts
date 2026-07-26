@@ -17,8 +17,10 @@ windows. It is intentionally local-first and dependency-free.
 
 - Five polished starter layouts, including a large focus pane with two or four
   supporting panes.
-- A snap-to-grid editor: add 1×1 windows, drag to move, drag the corner to
-  resize, and let colliding windows shift into the nearest free cells.
+- A large snap-to-grid canvas: drag from the card body or title-bar handle,
+  resize from the corner, and watch colliding windows reflow before the drop.
+- Add a 1×1 window from the first open grid cell and close the selected window
+  directly from its title bar.
 - Switchable 2×2 through 6×4 grids with minimum-size and fit constraints.
 - Saved local layouts and task assignments.
 - A searchable picker of top-level Codex conversations, grouped by project,
@@ -26,6 +28,8 @@ windows. It is intentionally local-first and dependency-free.
 - Multi-display selection, with LG displays preferred on first launch.
 - Accessibility-based positioning of matching open Codex windows.
 - A global `Control–Option–L` shortcut, menu bar access, and regular app launch.
+- Workspace commands for adding (`Command–=`) and removing (`Command–Delete`)
+  the selected window.
 - Light/Dark mode, reduced-motion support, and desktop-sized hit targets.
 - A one-command local build/run loop and a Codex Run action.
 

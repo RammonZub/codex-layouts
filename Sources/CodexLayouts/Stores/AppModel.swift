@@ -187,11 +187,15 @@ final class AppModel {
     }
 
     func removeSelectedWindow() {
+        guard let selectedSlotID else { return }
+        removeWindow(selectedSlotID)
+    }
+
+    func removeWindow(_ slotID: UUID) {
         guard let layoutIndex = selectedLayoutIndex,
-              let selectedSlotID,
               layouts[layoutIndex].slots.count > 1,
               let slotIndex = layouts[layoutIndex].slots.firstIndex(where: {
-                  $0.id == selectedSlotID
+                  $0.id == slotID
               }) else {
             return
         }
@@ -215,6 +219,10 @@ final class AppModel {
             showStatus("That size does not fit. Free more grid cells and try again.")
             return
         }
+        guard slots != layout.slots else {
+            selectedSlotID = slotID
+            return
+        }
         layouts[layoutIndex].slots = slots
         layouts[layoutIndex].isStarter = false
         selectedSlotID = slotID
@@ -228,8 +236,14 @@ final class AppModel {
             return
         }
         var gridRect = GridLayoutEngine.gridRect(for: slot.frame, in: layout.gridSize)
-        gridRect.columnSpan += columns
-        gridRect.rowSpan += rows
+        gridRect.columnSpan = min(
+            max(1, gridRect.columnSpan + columns),
+            layout.gridSize.columns - gridRect.column
+        )
+        gridRect.rowSpan = min(
+            max(1, gridRect.rowSpan + rows),
+            layout.gridSize.rows - gridRect.row
+        )
         placeWindow(selectedSlotID, at: gridRect)
     }
 

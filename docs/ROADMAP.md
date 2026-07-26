@@ -13,9 +13,9 @@
 ## 0.2 — Layout editor
 
 - [x] Cell-based grids with snapping and 1×1 minimum-size constraints
-- [x] Drag to move and resize windows
+- [x] Continuous drag/resize with live collision reflow
 - [x] Shift collisions into the nearest available cells
-- [x] Add and delete windows
+- [x] In-canvas add and direct card removal
 - [x] Select grid densities from 2×2 through 6×4
 - [x] Project-grouped task picker with local pins
 - [ ] Split and merge selected windows

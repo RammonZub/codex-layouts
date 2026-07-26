@@ -10,7 +10,7 @@ struct CodexLayoutsApp: App {
             ContentView(model: model)
                 .containerBackground(.ultraThickMaterial, for: .window)
         }
-        .defaultSize(width: 1_020, height: 690)
+        .defaultSize(width: 1_280, height: 820)
         .defaultLaunchBehavior(.presented)
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
@@ -27,6 +27,21 @@ struct CodexLayoutsApp: App {
                     model.createLayout()
                 }
                 .keyboardShortcut("n", modifiers: [.command, .option])
+
+                Button("Add Window") {
+                    withAnimation(LayoutDesign.layoutSpring) {
+                        model.addWindow()
+                    }
+                }
+                .keyboardShortcut("=", modifiers: [.command])
+
+                Button("Remove Selected Window", role: .destructive) {
+                    withAnimation(LayoutDesign.layoutSpring) {
+                        model.removeSelectedWindow()
+                    }
+                }
+                .keyboardShortcut(.delete, modifiers: [.command])
+                .disabled((model.selectedLayout?.slots.count ?? 0) <= 1)
 
                 Button("Open Assigned Tasks") {
                     model.openAssignedTasks()

@@ -12,8 +12,10 @@ content itself.
   and three neutral traffic-light dots.
 - Selection uses a precise accent ring and a visible corner resize handle.
 - Dashed grid lines make 1×1 units legible without overpowering the windows.
-- Dragged and resized windows lock to cells; collisions move the nearest
-  windows automatically, following dashboard and widget-editor conventions.
+- Dragged and resized windows follow the pointer continuously, preview their
+  snapped cell, and reflow collisions before the pointer is released.
+- The first open 1×1 cell becomes an in-canvas Add target. Selection reveals a
+  close control and a large corner resize handle on the card itself.
 - Depth comes from transparent shadows and system materials, not heavy borders.
 - Nested radii are concentric: 24-point outer canvas, 16-point inner canvas,
   and 10-point slots with 8-point spacing.
@@ -42,7 +44,8 @@ content itself.
 5. Task label: the saved Codex task title plus project name when space allows.
 6. Resize handle: a direct manipulation affordance on the selected window.
 
-The layout diagram is the product's main control, not decorative artwork.
-Window title bars drag, the corner handle resizes, and the task body opens the
-conversation picker. The picker separates pinned tasks from project folders and
-never displays internal subagent threads.
+The layout diagram is the product's main control, not decorative artwork. The
+card body and title-bar handle drag, the corner handle resizes, and a
+double-click on the body opens the conversation picker. Decorative material and
+stroke layers are always click-through. The picker separates pinned tasks from
+project folders and never displays internal subagent threads.

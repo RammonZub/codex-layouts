@@ -17,15 +17,26 @@ struct WorkspaceView: View {
                         selectedSlotID: model.selectedSlotID,
                         onSelectSlot: model.selectSlot,
                         onAssignSlot: model.presentTaskPicker,
-                        onPlaceSlot: model.placeWindow
+                        onPlaceSlot: model.placeWindow,
+                        onRemoveSlot: { slotID in
+                            withAnimation(LayoutDesign.layoutSpring) {
+                                model.removeWindow(slotID)
+                            }
+                        },
+                        onAddSlot: {
+                            withAnimation(LayoutDesign.layoutSpring) {
+                                model.addWindow()
+                            }
+                        }
                     )
-                    .frame(maxWidth: 760, maxHeight: 430)
+                    .frame(maxWidth: 1_040, minHeight: 400, maxHeight: .infinity)
+                    .layoutPriority(1)
 
                     selectionBar(for: layout)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 34)
-                .padding(.bottom, 22)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
             } else {
                 ContentUnavailableView(
                     "No layout selected",
@@ -36,6 +47,12 @@ struct WorkspaceView: View {
             }
 
             actionBar
+        }
+        .onDeleteCommand {
+            guard (model.selectedLayout?.slots.count ?? 0) > 1 else { return }
+            withAnimation(LayoutDesign.layoutSpring) {
+                model.removeSelectedWindow()
+            }
         }
     }
 
@@ -52,7 +69,7 @@ struct WorkspaceView: View {
                     )
                 }
 
-                Text("Drag title bars to move. Resize from the selected window’s corner.")
+                Text("Drag anywhere to move · double-click to assign · resize from the corner.")
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
             }
@@ -103,8 +120,8 @@ struct WorkspaceView: View {
         }
         .padding(.leading, 32)
         .padding(.trailing, 22)
-        .padding(.top, 20)
-        .padding(.bottom, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
         .contentShape(Rectangle())
         .gesture(WindowDragGesture())
         .allowsWindowActivationEvents(true)
@@ -141,7 +158,9 @@ struct WorkspaceView: View {
             .fixedSize()
 
             Button {
-                model.addWindow()
+                withAnimation(LayoutDesign.layoutSpring) {
+                    model.addWindow()
+                }
             } label: {
                 Label("Add window", systemImage: "plus")
                     .font(.system(size: 11.5, weight: .medium))
@@ -153,11 +172,11 @@ struct WorkspaceView: View {
 
             Spacer()
 
-            Label("1×1 minimum · positions locked to grid", systemImage: "lock.fill")
+            Label("Drag anywhere · snaps automatically", systemImage: "sparkles")
                 .font(.system(size: 10.5, weight: .medium))
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: 760)
+        .frame(maxWidth: 1_040)
     }
 
     @ViewBuilder
@@ -207,7 +226,7 @@ struct WorkspaceView: View {
                 sizeButton(
                     systemImage: "arrow.right",
                     help: "Make one column wider",
-                    disabled: rect.columnSpan >= layout.gridSize.columns
+                    disabled: rect.maxColumn >= layout.gridSize.columns
                 ) {
                     model.resizeSelectedWindow(columns: 1)
                 }
@@ -221,13 +240,15 @@ struct WorkspaceView: View {
                 sizeButton(
                     systemImage: "arrow.down",
                     help: "Make one row taller",
-                    disabled: rect.rowSpan >= layout.gridSize.rows
+                    disabled: rect.maxRow >= layout.gridSize.rows
                 ) {
                     model.resizeSelectedWindow(rows: 1)
                 }
 
                 Button(role: .destructive) {
-                    model.removeSelectedWindow()
+                    withAnimation(LayoutDesign.layoutSpring) {
+                        model.removeSelectedWindow()
+                    }
                 } label: {
                     Image(systemName: "trash")
                         .frame(width: 34, height: 34)
@@ -237,7 +258,7 @@ struct WorkspaceView: View {
                 .disabled(layout.slots.count <= 1)
                 .help("Remove window")
             }
-            .frame(maxWidth: 760)
+            .frame(maxWidth: 1_040)
         }
     }
 

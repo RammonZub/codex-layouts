@@ -10,7 +10,7 @@ struct ContentView: View {
 
             HStack(spacing: 0) {
                 SidebarView(model: model)
-                    .frame(width: 236)
+                    .frame(width: 220)
 
                 Rectangle()
                     .fill(.primary.opacity(0.07))
@@ -19,7 +19,7 @@ struct ContentView: View {
                 WorkspaceView(model: model)
             }
         }
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 1_040, minHeight: 700)
         .sheet(isPresented: $model.isShowingTaskPicker) {
             TaskPickerView(model: model)
         }

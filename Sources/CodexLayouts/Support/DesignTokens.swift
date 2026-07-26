@@ -10,6 +10,7 @@ enum LayoutDesign {
 
     static let interactiveAnimation = Animation.easeOut(duration: 0.16)
     static let stateAnimation = Animation.easeInOut(duration: 0.22)
+    static let layoutSpring = Animation.spring(response: 0.24, dampingFraction: 0.84)
 }
 
 extension ShapeStyle where Self == Color {
