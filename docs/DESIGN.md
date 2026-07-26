@@ -16,6 +16,8 @@ content itself.
 - Quiet grid lines make 1×1 units legible without overpowering the windows.
 - Dragged and resized windows follow the pointer continuously, preview their
   snapped cell, and reflow collisions before the pointer is released.
+- Each card has one interaction owner at a time. Drag and resize share a stable
+  canvas coordinate space, and only displaced cards animate during reflow.
 - Empty 1×1 cells remain aligned in the canvas and are direct Add targets; only
   the first vacancy shows a persistent plus, while the others reveal it on
   hover. Selection reveals close, task, and resize controls on the card.

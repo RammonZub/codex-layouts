@@ -1,5 +1,9 @@
 import SwiftUI
 
+private enum LayoutCanvasCoordinateSpace {
+    static let name = "layout-canvas"
+}
+
 struct LayoutPreview: View {
     let layout: WorkspaceLayout
     let tasksByID: [String: CodexTask]
@@ -10,7 +14,6 @@ struct LayoutPreview: View {
     let onRemoveSlot: (UUID) -> Void
     let onAddSlot: (GridRect) -> Void
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var previewSlots: [LayoutSlot]?
     @State private var activeSlotID: UUID?
 
@@ -76,6 +79,7 @@ struct LayoutPreview: View {
                 }
                 .frame(width: canvas.width, height: canvas.height)
                 .clipShape(RoundedRectangle(cornerRadius: LayoutDesign.canvasRadius))
+                .coordinateSpace(name: LayoutCanvasCoordinateSpace.name)
                 .padding(LayoutDesign.cardPadding)
             }
             .frame(
@@ -101,26 +105,13 @@ struct LayoutPreview: View {
             return
         }
 
-        if reduceMotion {
-            previewSlots = result
-        } else {
-            withAnimation(LayoutDesign.layoutSpring) {
-                previewSlots = result
-            }
-        }
+        previewSlots = result
     }
 
     private func commit(slotID: UUID, at rect: GridRect) {
         onPlaceSlot(slotID, rect)
-        if reduceMotion {
-            previewSlots = nil
-            activeSlotID = nil
-        } else {
-            withAnimation(LayoutDesign.layoutSpring) {
-                previewSlots = nil
-                activeSlotID = nil
-            }
-        }
+        previewSlots = nil
+        activeSlotID = nil
     }
 
     private func fittedCanvas(in size: CGSize) -> CGSize {
@@ -193,13 +184,18 @@ private struct GridSlotItem: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovering = false
-    @State private var isMoving = false
-    @State private var isResizing = false
-    @State private var moveOrigin: GridRect?
-    @State private var resizeOrigin: GridRect?
+    @State private var interaction = GridInteractionState()
     @State private var lastMoveProposal: GridRect?
     @State private var lastResizeProposal: GridRect?
-    @State private var moveRemainder = CGSize.zero
+    @State private var moveTranslation = CGSize.zero
+
+    private var isMoving: Bool {
+        interaction.activeKind == .move
+    }
+
+    private var isResizing: Bool {
+        interaction.activeKind == .resize
+    }
 
     private var sourceRect: GridRect {
         GridLayoutEngine.gridRect(for: slot.frame, in: gridSize)
@@ -232,20 +228,26 @@ private struct GridSlotItem: View {
     }
 
     private var snappedCardPosition: CGPoint {
+        cardPosition(for: sourceRect)
+    }
+
+    private func cardPosition(for rect: GridRect) -> CGPoint {
         CGPoint(
             x: cellSize.width
-                * (CGFloat(sourceRect.column) + CGFloat(sourceRect.columnSpan) / 2),
+                * (CGFloat(rect.column) + CGFloat(rect.columnSpan) / 2),
             y: cellSize.height
-                * (CGFloat(sourceRect.row) + CGFloat(sourceRect.rowSpan) / 2)
+                * (CGFloat(rect.row) + CGFloat(rect.rowSpan) / 2)
         )
     }
 
     private var renderedCardPosition: CGPoint {
-        CGPoint(
-            x: snappedCardPosition.x
-                + moveRemainder.width,
-            y: snappedCardPosition.y
-                + moveRemainder.height
+        guard let moveOrigin = interaction.origin(for: .move) else {
+            return snappedCardPosition
+        }
+        let originPosition = cardPosition(for: moveOrigin)
+        return CGPoint(
+            x: originPosition.x + moveTranslation.width,
+            y: originPosition.y + moveTranslation.height
         )
     }
 
@@ -364,6 +366,7 @@ private struct GridSlotItem: View {
             .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
             .gesture(moveGesture)
             .simultaneousGesture(magnifyGesture)
+            .simultaneousGesture(TapGesture().onEnded(onSelect))
     }
 
     private var taskContent: some View {
@@ -394,22 +397,20 @@ private struct GridSlotItem: View {
     }
 
     private var moveGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
+        DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(LayoutCanvasCoordinateSpace.name)
+        )
             .onChanged { value in
-                let origin: GridRect
-                if let moveOrigin {
-                    origin = moveOrigin
-                } else {
-                    origin = sourceRect
-                    moveOrigin = sourceRect
+                let isBeginning = interaction.activeKind == nil
+                guard let origin = interaction.begin(.move, at: sourceRect) else {
+                    return
+                }
+                if isBeginning {
                     onSelect()
                 }
 
-                guard abs(value.translation.width) >= 3
-                        || abs(value.translation.height) >= 3 else {
-                    return
-                }
-                isMoving = true
+                moveTranslation = value.translation
 
                 let columnDelta = Int(
                     (value.translation.width / cellSize.width).rounded()
@@ -425,17 +426,16 @@ private struct GridSlotItem: View {
                 )
                 .clamped(to: gridSize)
 
+                guard proposal != lastMoveProposal else {
+                    return
+                }
                 lastMoveProposal = proposal
-                moveRemainder = CGSize(
-                    width: value.translation.width
-                        - CGFloat(proposal.column - origin.column) * cellSize.width,
-                    height: value.translation.height
-                        - CGFloat(proposal.row - origin.row) * cellSize.height
-                )
                 onPreview(proposal)
             }
             .onEnded { _ in
-                guard moveOrigin != nil else { return }
+                guard interaction.activeKind == .move else {
+                    return
+                }
                 if let proposal = lastMoveProposal {
                     onCommit(proposal)
                 }
@@ -444,15 +444,16 @@ private struct GridSlotItem: View {
     }
 
     private var resizeGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
+        DragGesture(
+            minimumDistance: 3,
+            coordinateSpace: .named(LayoutCanvasCoordinateSpace.name)
+        )
             .onChanged { value in
-                let origin: GridRect
-                if let resizeOrigin {
-                    origin = resizeOrigin
-                } else {
-                    origin = sourceRect
-                    resizeOrigin = sourceRect
-                    isResizing = true
+                let isBeginning = interaction.activeKind == nil
+                guard let origin = interaction.begin(.resize, at: sourceRect) else {
+                    return
+                }
+                if isBeginning {
                     onSelect()
                 }
 
@@ -482,7 +483,11 @@ private struct GridSlotItem: View {
                 onPreview(proposal)
             }
             .onEnded { _ in
-                let proposal = lastResizeProposal ?? resizeOrigin ?? sourceRect
+                guard interaction.activeKind == .resize,
+                      let origin = interaction.origin(for: .resize) else {
+                    return
+                }
+                let proposal = lastResizeProposal ?? origin
                 onCommit(proposal)
                 settleResizeState()
             }
@@ -491,13 +496,11 @@ private struct GridSlotItem: View {
     private var magnifyGesture: some Gesture {
         MagnifyGesture(minimumScaleDelta: 0.02)
             .onChanged { value in
-                let origin: GridRect
-                if let resizeOrigin {
-                    origin = resizeOrigin
-                } else {
-                    origin = sourceRect
-                    resizeOrigin = sourceRect
-                    isResizing = true
+                let isBeginning = interaction.activeKind == nil
+                guard let origin = interaction.begin(.resize, at: sourceRect) else {
+                    return
+                }
+                if isBeginning {
                     onSelect()
                 }
 
@@ -533,40 +536,24 @@ private struct GridSlotItem: View {
                 onPreview(proposal)
             }
             .onEnded { _ in
-                let proposal = lastResizeProposal ?? resizeOrigin ?? sourceRect
+                guard interaction.activeKind == .resize,
+                      let origin = interaction.origin(for: .resize) else {
+                    return
+                }
+                let proposal = lastResizeProposal ?? origin
                 onCommit(proposal)
                 settleResizeState()
             }
     }
 
     private func settleMoveState() {
-        let changes = {
-            moveRemainder = .zero
-            isMoving = false
-        }
-        if reduceMotion {
-            changes()
-        } else {
-            withAnimation(LayoutDesign.layoutSpring) {
-                changes()
-            }
-        }
-        moveOrigin = nil
+        moveTranslation = .zero
+        interaction.end(.move)
         lastMoveProposal = nil
     }
 
     private func settleResizeState() {
-        let changes = {
-            isResizing = false
-        }
-        if reduceMotion {
-            changes()
-        } else {
-            withAnimation(LayoutDesign.layoutSpring) {
-                changes()
-            }
-        }
-        resizeOrigin = nil
+        interaction.end(.resize)
         lastResizeProposal = nil
     }
 
