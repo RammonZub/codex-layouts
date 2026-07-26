@@ -8,7 +8,7 @@ struct LayoutPreview: View {
     let onAssignSlot: (UUID) -> Void
     let onPlaceSlot: (UUID, GridRect) -> Void
     let onRemoveSlot: (UUID) -> Void
-    let onAddSlot: () -> Void
+    let onAddSlot: (GridRect) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var previewSlots: [LayoutSlot]?
@@ -54,21 +54,24 @@ struct LayoutPreview: View {
                         .transition(.scale(scale: 0.88).combined(with: .opacity))
                     }
 
-                    if activeSlotID == nil,
-                       let openSlot = GridLayoutEngine.addingUnitSlot(
-                           to: layout.slots,
-                           in: layout.gridSize
-                       ) {
-                        AddGridCellButton(
-                            rect: GridLayoutEngine.gridRect(
-                                for: openSlot.frame,
-                                in: layout.gridSize
-                            ),
-                            gridSize: layout.gridSize,
-                            canvasSize: canvas,
-                            action: onAddSlot
+                    if activeSlotID == nil {
+                        let vacancies = GridLayoutEngine.vacantUnitRects(
+                            around: layout.slots,
+                            in: layout.gridSize
                         )
-                        .transition(.scale(scale: 0.9).combined(with: .opacity))
+                        ForEach(
+                            Array(vacancies.enumerated()),
+                            id: \.element
+                        ) { index, openRect in
+                            AddGridCellButton(
+                                rect: openRect,
+                                gridSize: layout.gridSize,
+                                canvasSize: canvas,
+                                showsHint: index == 0,
+                                action: { onAddSlot(openRect) }
+                            )
+                            .transition(.scale(scale: 0.9).combined(with: .opacity))
+                        }
                     }
                 }
                 .frame(width: canvas.width, height: canvas.height)
@@ -600,6 +603,7 @@ private struct AddGridCellButton: View {
     let rect: GridRect
     let gridSize: GridSize
     let canvasSize: CGSize
+    let showsHint: Bool
     let action: () -> Void
 
     @State private var isHovering = false
@@ -616,6 +620,7 @@ private struct AddGridCellButton: View {
             Image(systemName: "plus")
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(.secondary)
+                .opacity(isHovering || showsHint ? 1 : 0)
             .frame(
                 width: max(42, cellSize.width - LayoutDesign.slotGap),
                 height: max(42, cellSize.height - LayoutDesign.slotGap)

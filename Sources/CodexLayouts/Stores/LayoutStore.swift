@@ -6,7 +6,7 @@ struct LayoutStore {
         var layouts: [WorkspaceLayout]
     }
 
-    private static let currentSchemaVersion = 4
+    private static let currentSchemaVersion = 5
 
     let fileURL: URL
 
@@ -132,6 +132,26 @@ struct LayoutStore {
             }
         }
 
+        if document.schemaVersion < 5 {
+            for layoutIndex in layouts.indices {
+                guard shouldRestoreDamagedStarter(layouts[layoutIndex]),
+                      let replacement = WorkspaceLayout.starters.first(where: {
+                          $0.name == layouts[layoutIndex].name
+                      }) else {
+                    continue
+                }
+                layouts[layoutIndex] = WorkspaceLayout(
+                    id: layouts[layoutIndex].id,
+                    name: replacement.name,
+                    slots: replacement.slots.map {
+                        LayoutSlot(frame: $0.frame)
+                    },
+                    gridSize: replacement.gridSize,
+                    isStarter: true
+                )
+            }
+        }
+
         return LayoutDocument(
             schemaVersion: Self.currentSchemaVersion,
             layouts: layouts
@@ -142,5 +162,19 @@ struct LayoutStore {
         layout.name == "Focus + Four"
             && layout.slots.count == 5
             && layout.slots.dropFirst().allSatisfy { $0.frame.width < 0.3 }
+    }
+
+    private func shouldRestoreDamagedStarter(_ layout: WorkspaceLayout) -> Bool {
+        guard layout.slots.allSatisfy({ $0.taskID == nil }) else {
+            return false
+        }
+        switch layout.name {
+        case "Focus + Stack":
+            return layout.slots.count < 3
+        case "Focus + Grid":
+            return layout.slots.count < 8
+        default:
+            return false
+        }
     }
 }

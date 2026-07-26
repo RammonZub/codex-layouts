@@ -83,6 +83,43 @@ enum GridLayoutEngine {
         return LayoutSlot(frame: normalizedRect(for: vacancy, in: grid))
     }
 
+    static func addingUnitSlot(
+        at rect: GridRect,
+        to slots: [LayoutSlot],
+        in grid: GridSize
+    ) -> LayoutSlot? {
+        let unit = GridRect(
+            column: rect.column,
+            row: rect.row,
+            columnSpan: 1,
+            rowSpan: 1
+        )
+        .clamped(to: grid)
+        let occupied = slots.map { gridRect(for: $0.frame, in: grid) }
+        guard isAvailable(unit, occupied: occupied) else {
+            return nil
+        }
+        return LayoutSlot(frame: normalizedRect(for: unit, in: grid))
+    }
+
+    static func vacantUnitRects(
+        around slots: [LayoutSlot],
+        in grid: GridSize
+    ) -> [GridRect] {
+        let occupied = slots.map { gridRect(for: $0.frame, in: grid) }
+        return (0..<grid.rows).flatMap { row in
+            (0..<grid.columns).compactMap { column in
+                let unit = GridRect(
+                    column: column,
+                    row: row,
+                    columnSpan: 1,
+                    rowSpan: 1
+                )
+                return isAvailable(unit, occupied: occupied) ? unit : nil
+            }
+        }
+    }
+
     static func regridding(
         _ slots: [LayoutSlot],
         from sourceGrid: GridSize,

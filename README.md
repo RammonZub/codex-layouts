@@ -22,6 +22,8 @@ windows. It is intentionally local-first and dependency-free.
   collision reflow.
 - Selected-window controls for assigning, removing, and resizing without a
   separate inspector or permanent toolbar.
+- Every empty grid cell is a direct add target, so gaps stay visibly aligned
+  and a new window appears exactly where you click.
 - Switchable 3×2 through 6×4 grids with minimum-size and fit constraints.
 - Saved local layouts and task assignments.
 - A searchable picker of top-level Codex conversations, grouped by project,

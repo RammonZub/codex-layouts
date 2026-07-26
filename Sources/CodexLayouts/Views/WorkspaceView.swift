@@ -20,9 +20,9 @@ struct WorkspaceView: View {
                             model.removeWindow(slotID)
                         }
                     },
-                    onAddSlot: {
+                    onAddSlot: { gridRect in
                         withAnimation(LayoutDesign.layoutSpring) {
-                            model.addWindow()
+                            model.addWindow(at: gridRect)
                         }
                     }
                 )

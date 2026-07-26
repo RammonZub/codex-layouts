@@ -170,13 +170,22 @@ final class AppModel {
         persistLayouts()
     }
 
-    func addWindow() {
+    func addWindow(at gridRect: GridRect? = nil) {
         guard let layoutIndex = selectedLayoutIndex else { return }
         let layout = layouts[layoutIndex]
-        guard let slot = GridLayoutEngine.addingUnitSlot(
-            to: layout.slots,
-            in: layout.gridSize
-        ) else {
+        let slot = if let gridRect {
+            GridLayoutEngine.addingUnitSlot(
+                at: gridRect,
+                to: layout.slots,
+                in: layout.gridSize
+            )
+        } else {
+            GridLayoutEngine.addingUnitSlot(
+                to: layout.slots,
+                in: layout.gridSize
+            )
+        }
+        guard let slot else {
             showStatus("This grid is full. Expand the grid or resize another window first.")
             return
         }

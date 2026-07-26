@@ -16,8 +16,9 @@ content itself.
 - Quiet grid lines make 1×1 units legible without overpowering the windows.
 - Dragged and resized windows follow the pointer continuously, preview their
   snapped cell, and reflow collisions before the pointer is released.
-- The first open 1×1 cell becomes an in-canvas Add target. Selection reveals a
-  close control, task control, and large corner resize handle on the card.
+- Empty 1×1 cells remain aligned in the canvas and are direct Add targets; only
+  the first vacancy shows a persistent plus, while the others reveal it on
+  hover. Selection reveals close, task, and resize controls on the card.
 - The complete card surface is one selection and drag target; decoration is
   click-through so no invisible layer can steal pointer input.
 - A trackpad pinch resizes the selected card through the same interaction

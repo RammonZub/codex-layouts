@@ -97,6 +97,39 @@ struct LayoutStoreTests {
         )
     }
 
+    @Test("Unassigned damaged starters are restored to intentional geometry")
+    func restoresDamagedStarterGeometry() throws {
+        let fileURL = temporaryFileURL()
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        let damaged = WorkspaceLayout(
+            name: "Focus + Stack",
+            slots: [
+                LayoutSlot(frame: .init(x: 0, y: 0, width: 0.5, height: 0.5)),
+                LayoutSlot(frame: .init(x: 0.5, y: 0, width: 0.5, height: 0.5))
+            ],
+            gridSize: .init(columns: 4, rows: 2)
+        )
+        let document = """
+        {
+          "schemaVersion": 4,
+          "layouts": \(String(decoding: try JSONEncoder().encode([damaged]), as: UTF8.self))
+        }
+        """
+        try Data(document.utf8).write(to: fileURL)
+
+        let restored = try LayoutStore(fileURL: fileURL).load().first
+
+        #expect(restored?.slots.count == 3)
+        #expect(restored?.slots.first?.frame.height == 1)
+        #expect(restored?.isStarter == true)
+        try? FileManager.default.removeItem(
+            at: fileURL.deletingLastPathComponent()
+        )
+    }
+
     private func temporaryFileURL() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "CodexLayoutsTests-\(UUID().uuidString)")

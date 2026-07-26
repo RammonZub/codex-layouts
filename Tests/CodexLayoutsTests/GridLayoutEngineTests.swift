@@ -85,4 +85,53 @@ struct GridLayoutEngineTests {
             )
         )
     }
+
+    @Test("Every empty unit cell is available as an add target")
+    func exposesEveryEmptyCell() {
+        let grid = GridSize(columns: 4, rows: 2)
+        let existing = LayoutSlot(
+            frame: .init(x: 0, y: 0, width: 0.5, height: 1)
+        )
+
+        let vacancies = GridLayoutEngine.vacantUnitRects(
+            around: [existing],
+            in: grid
+        )
+
+        #expect(vacancies.count == 4)
+        #expect(vacancies.first == GridRect(
+            column: 2,
+            row: 0,
+            columnSpan: 1,
+            rowSpan: 1
+        ))
+        #expect(vacancies.last == GridRect(
+            column: 3,
+            row: 1,
+            columnSpan: 1,
+            rowSpan: 1
+        ))
+    }
+
+    @Test("A window can be added to the chosen empty cell")
+    func addsAtChosenCell() {
+        let grid = GridSize(columns: 4, rows: 2)
+        let desired = GridRect(
+            column: 3,
+            row: 1,
+            columnSpan: 1,
+            rowSpan: 1
+        )
+
+        let added = GridLayoutEngine.addingUnitSlot(
+            at: desired,
+            to: [],
+            in: grid
+        )
+
+        #expect(
+            added.map { GridLayoutEngine.gridRect(for: $0.frame, in: grid) }
+                == desired
+        )
+    }
 }
