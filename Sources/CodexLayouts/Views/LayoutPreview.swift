@@ -345,7 +345,7 @@ private struct GridSlotItem: View {
             y: isMoving || isResizing ? 9 : (isHovering || isSelected ? 5 : 2)
         )
         .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
-        .help("Click to select · drag to move")
+        .help("Click to select · drag to move · pinch to resize")
     }
 
     private var titleBar: some View {
@@ -366,6 +366,7 @@ private struct GridSlotItem: View {
         Color.primary.opacity(0.001)
             .contentShape(RoundedRectangle(cornerRadius: LayoutDesign.slotRadius))
             .gesture(moveGesture)
+            .simultaneousGesture(magnifyGesture)
     }
 
     private var taskContent: some View {
@@ -483,6 +484,70 @@ private struct GridSlotItem: View {
                         - CGFloat(proposal.columnSpan - origin.columnSpan) * cellSize.width,
                     height: value.translation.height
                         - CGFloat(proposal.rowSpan - origin.rowSpan) * cellSize.height
+                )
+                onPreview(proposal)
+            }
+            .onEnded { _ in
+                let proposal = lastResizeProposal ?? resizeOrigin ?? sourceRect
+                onCommit(proposal)
+                settleResizeState()
+            }
+    }
+
+    private var magnifyGesture: some Gesture {
+        MagnifyGesture(minimumScaleDelta: 0.02)
+            .onChanged { value in
+                let origin: GridRect
+                if let resizeOrigin {
+                    origin = resizeOrigin
+                } else {
+                    origin = sourceRect
+                    resizeOrigin = sourceRect
+                    isResizing = true
+                    onSelect()
+                }
+
+                let proposal = GridRect(
+                    column: origin.column,
+                    row: origin.row,
+                    columnSpan: min(
+                        max(
+                            1,
+                            Int(
+                                (
+                                    CGFloat(origin.columnSpan)
+                                        * value.magnification
+                                )
+                                .rounded()
+                            )
+                        ),
+                        gridSize.columns - origin.column
+                    ),
+                    rowSpan: min(
+                        max(
+                            1,
+                            Int(
+                                (
+                                    CGFloat(origin.rowSpan)
+                                        * value.magnification
+                                )
+                                .rounded()
+                            )
+                        ),
+                        gridSize.rows - origin.row
+                    )
+                )
+
+                lastResizeProposal = proposal
+                resizeRemainder = CGSize(
+                    width: cellSize.width
+                        * CGFloat(origin.columnSpan)
+                        * value.magnification
+                        - cellSize.width * CGFloat(proposal.columnSpan),
+                    height: cellSize.height
+                        * CGFloat(origin.rowSpan)
+                        * value.magnification
+                        - cellSize.height * CGFloat(proposal.rowSpan)
                 )
                 onPreview(proposal)
             }

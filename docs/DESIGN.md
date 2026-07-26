@@ -20,6 +20,8 @@ content itself.
   close control, task control, and large corner resize handle on the card.
 - The complete card surface is one selection and drag target; decoration is
   click-through so no invisible layer can steal pointer input.
+- A trackpad pinch resizes the selected card through the same interaction
+  surface, with the corner handle retained for precise pointer control.
 - Depth comes from transparent shadows and system materials, not heavy borders.
 - Nested radii are concentric: 24-point outer canvas, 16-point inner canvas,
   and 10-point slots with 8-point spacing.
@@ -48,6 +50,6 @@ content itself.
 
 The layout diagram is the product's main control, not decorative artwork. The
 whole card selects on click and drags from any point, while the corner handle
-resizes. Decorative material and stroke layers are always click-through. The
-picker separates pinned tasks from project folders and never displays internal
-subagent threads.
+or a trackpad pinch resizes. Decorative material and stroke layers are always
+click-through. The picker separates pinned tasks from project folders and never
+displays internal subagent threads.

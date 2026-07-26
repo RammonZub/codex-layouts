@@ -18,7 +18,8 @@ windows. It is intentionally local-first and dependency-free.
 - Five polished starter layouts, led by an LG-friendly 4×2 workspace with a
   large focus pane and supporting windows.
 - A large snap-to-grid canvas: click anywhere on a window to select it, drag
-  from its full surface, resize from the corner, and preview collision reflow.
+  from its full surface, pinch or use the corner to resize, and preview
+  collision reflow.
 - Selected-window controls for assigning, removing, and resizing without a
   separate inspector or permanent toolbar.
 - Switchable 3×2 through 6×4 grids with minimum-size and fit constraints.
